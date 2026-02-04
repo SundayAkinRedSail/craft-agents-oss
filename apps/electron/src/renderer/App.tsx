@@ -1316,6 +1316,7 @@ export default function App() {
           onBack={onboarding.handleBack}
           onSelectApiSetupMethod={onboarding.handleSelectApiSetupMethod}
           onSubmitCredential={onboarding.handleSubmitCredential}
+          onSubmitAwsBedrock={onboarding.handleSubmitAwsBedrock}
           onStartOAuth={onboarding.handleStartOAuth}
           onFinish={onboarding.handleFinish}
           isWaitingForCode={onboarding.isWaitingForCode}

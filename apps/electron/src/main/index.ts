@@ -1,7 +1,8 @@
 // Load user's shell environment first (before other imports that may use env)
 // This ensures tools like Homebrew, nvm, etc. are available to the agent
-import { loadShellEnv } from './shell-env'
+import { loadShellEnv, loadDotEnv } from './shell-env'
 loadShellEnv()
+loadDotEnv()  // Load .env file for development (AWS Bedrock credentials, etc.)
 
 import { app, BrowserWindow } from 'electron'
 import { createHash } from 'crypto'

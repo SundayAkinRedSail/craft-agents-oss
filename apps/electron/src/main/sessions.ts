@@ -765,6 +765,40 @@ export class SessionManager {
         sessionLog.error('No authentication configured!')
       }
 
+      // AWS Bedrock support: Check for credentials in credential manager first, then environment
+      const awsCreds = await getCredentialManager().getAwsBedrockCredentials()
+      if (awsCreds) {
+        // Set AWS credentials from credential manager
+        process.env.AWS_ACCESS_KEY_ID = awsCreds.accessKeyId
+        process.env.AWS_SECRET_ACCESS_KEY = awsCreds.secretAccessKey
+        process.env.AWS_REGION = awsCreds.region
+        if (awsCreds.sessionToken) {
+          process.env.AWS_SESSION_TOKEN = awsCreds.sessionToken
+        }
+        process.env.CLAUDE_CODE_USE_BEDROCK = '1'
+        // Set the Bedrock model ID format - SDK requires this for Bedrock
+        // Use 'us.' prefix for US regions (cross-region inference)
+        process.env.ANTHROPIC_MODEL = 'us.anthropic.claude-sonnet-4-5-20250929-v1:0'
+        process.env.ANTHROPIC_SMALL_FAST_MODEL = 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+        // Clear other auth methods
+        delete process.env.ANTHROPIC_API_KEY
+        delete process.env.ANTHROPIC_BASE_URL
+        delete process.env.CLAUDE_CODE_OAUTH_TOKEN
+        sessionLog.info('AWS Bedrock credentials loaded from credential manager, enabling Bedrock mode')
+        sessionLog.info('Using Bedrock model:', process.env.ANTHROPIC_MODEL)
+      } else if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+        // Fallback: Check environment variables (e.g., from .env file in dev mode)
+        sessionLog.info('AWS Bedrock credentials detected in environment, enabling Bedrock mode')
+        process.env.CLAUDE_CODE_USE_BEDROCK = '1'
+        // Set the Bedrock model ID format
+        if (!process.env.ANTHROPIC_MODEL) {
+          process.env.ANTHROPIC_MODEL = 'us.anthropic.claude-sonnet-4-5-20250929-v1:0'
+        }
+        if (!process.env.ANTHROPIC_SMALL_FAST_MODEL) {
+          process.env.ANTHROPIC_SMALL_FAST_MODEL = 'us.anthropic.claude-haiku-4-5-20251001-v1:0'
+        }
+      }
+
       // Reset cached summarization client so it picks up new credentials/base URL
       resetSummarizationClient()
     } catch (error) {

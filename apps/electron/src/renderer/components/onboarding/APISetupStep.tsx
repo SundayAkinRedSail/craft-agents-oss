@@ -1,8 +1,8 @@
 import { cn } from "@/lib/utils"
-import { Check, CreditCard, Key } from "lucide-react"
+import { Check, CreditCard, Key, Cloud } from "lucide-react"
 import { StepFormLayout, BackButton, ContinueButton } from "./primitives"
 
-export type ApiSetupMethod = 'api_key' | 'claude_oauth'
+export type ApiSetupMethod = 'api_key' | 'claude_oauth' | 'aws_bedrock'
 
 interface ApiSetupOption {
   id: ApiSetupMethod
@@ -19,6 +19,12 @@ const API_SETUP_OPTIONS: ApiSetupOption[] = [
     description: 'Use your Claude subscription for unlimited access.',
     icon: <CreditCard className="size-4" />,
     recommended: true,
+  },
+  {
+    id: 'aws_bedrock',
+    name: 'AWS Bedrock',
+    description: 'Use Claude via AWS Bedrock with your AWS credentials.',
+    icon: <Cloud className="size-4" />,
   },
   {
     id: 'api_key',

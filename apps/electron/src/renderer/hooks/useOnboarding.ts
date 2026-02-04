@@ -17,7 +17,7 @@ import type {
   CredentialStatus,
   ApiSetupMethod,
 } from '@/components/onboarding'
-import type { ApiKeySubmitData } from '@/components/apisetup'
+import type { ApiKeySubmitData, AwsBedrockSubmitData } from '@/components/apisetup'
 import type { AuthType, SetupNeeds, GitBashStatus } from '../../shared/types'
 
 interface UseOnboardingOptions {
@@ -47,6 +47,7 @@ interface UseOnboardingReturn {
 
   // Credentials
   handleSubmitCredential: (data: ApiKeySubmitData) => void
+  handleSubmitAwsBedrock: (data: AwsBedrockSubmitData) => void
   handleStartOAuth: () => void
 
   // Claude OAuth (two-step flow)
@@ -72,6 +73,7 @@ interface UseOnboardingReturn {
 function apiSetupMethodToAuthType(method: ApiSetupMethod): AuthType {
   switch (method) {
     case 'api_key': return 'api_key'
+    case 'aws_bedrock': return 'api_key'  // AWS Bedrock uses api_key type (credentials come from env)
     case 'claude_oauth': return 'oauth_token'
   }
 }
@@ -262,6 +264,53 @@ export function useOnboarding({
     }
   }, [handleSaveConfig])
 
+  // Submit AWS Bedrock credentials
+  const handleSubmitAwsBedrock = useCallback(async (data: AwsBedrockSubmitData) => {
+    setState(s => ({ ...s, credentialStatus: 'validating', errorMessage: undefined }))
+
+    try {
+      // Validate required fields
+      if (!data.accessKeyId.trim() || !data.secretAccessKey.trim()) {
+        setState(s => ({
+          ...s,
+          credentialStatus: 'error',
+          errorMessage: 'AWS Access Key ID and Secret Access Key are required',
+        }))
+        return
+      }
+
+      // Save AWS Bedrock configuration
+      const result = await window.electronAPI.saveAwsBedrockConfig({
+        accessKeyId: data.accessKeyId,
+        secretAccessKey: data.secretAccessKey,
+        region: data.region,
+        sessionToken: data.sessionToken,
+      })
+
+      if (!result.success) {
+        setState(s => ({
+          ...s,
+          credentialStatus: 'error',
+          errorMessage: result.error || 'Failed to save AWS Bedrock configuration',
+        }))
+        return
+      }
+
+      setState(s => ({
+        ...s,
+        credentialStatus: 'success',
+        completionStatus: 'complete',
+        step: 'complete',
+      }))
+    } catch (error) {
+      setState(s => ({
+        ...s,
+        credentialStatus: 'error',
+        errorMessage: error instanceof Error ? error.message : 'Failed to save configuration',
+      }))
+    }
+  }, [])
+
   // Two-step OAuth flow state
   const [isWaitingForCode, setIsWaitingForCode] = useState(false)
 
@@ -414,6 +463,7 @@ export function useOnboarding({
     handleBack,
     handleSelectApiSetupMethod,
     handleSubmitCredential,
+    handleSubmitAwsBedrock,
     handleStartOAuth,
     // Two-step OAuth flow
     isWaitingForCode,

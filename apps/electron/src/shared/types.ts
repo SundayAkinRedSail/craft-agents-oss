@@ -607,6 +607,7 @@ export const IPC_CHANNELS = {
   ONBOARDING_VALIDATE_MCP: 'onboarding:validateMcp',
   ONBOARDING_START_MCP_OAUTH: 'onboarding:startMcpOAuth',
   ONBOARDING_SAVE_CONFIG: 'onboarding:saveConfig',
+  ONBOARDING_SAVE_AWS_BEDROCK_CONFIG: 'onboarding:saveAwsBedrockConfig',
   // Claude OAuth (two-step flow)
   ONBOARDING_START_CLAUDE_OAUTH: 'onboarding:startClaudeOAuth',
   ONBOARDING_EXCHANGE_CLAUDE_CODE: 'onboarding:exchangeClaudeCode',
@@ -878,6 +879,12 @@ export interface ElectronAPI {
     mcpCredentials?: { accessToken: string; clientId?: string }  // MCP OAuth credentials
     anthropicBaseUrl?: string | null  // Custom Anthropic API base URL
     customModel?: string | null  // Custom model ID override
+  }): Promise<OnboardingSaveResult>
+  saveAwsBedrockConfig(config: {
+    accessKeyId: string
+    secretAccessKey: string
+    region: string
+    sessionToken?: string
   }): Promise<OnboardingSaveResult>
   // Claude OAuth (two-step flow)
   startClaudeOAuth(): Promise<{ success: boolean; authUrl?: string; error?: string }>

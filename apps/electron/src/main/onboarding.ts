@@ -309,4 +309,68 @@ export function registerOnboardingHandlers(sessionManager: SessionManager): void
     clearOAuthState()
     return { success: true }
   })
+
+  // Save AWS Bedrock configuration
+  ipcMain.handle(IPC_CHANNELS.ONBOARDING_SAVE_AWS_BEDROCK_CONFIG, async (_event, config: {
+    accessKeyId: string
+    secretAccessKey: string
+    region: string
+    sessionToken?: string
+  }): Promise<OnboardingSaveResult> => {
+    mainLog.info('[Onboarding:Main] ONBOARDING_SAVE_AWS_BEDROCK_CONFIG received')
+
+    try {
+      // Store AWS credentials in credential manager
+      const manager = getCredentialManager()
+      await manager.setAwsBedrockCredentials({
+        accessKeyId: config.accessKeyId,
+        secretAccessKey: config.secretAccessKey,
+        region: config.region,
+        sessionToken: config.sessionToken,
+      })
+      mainLog.info('[Onboarding:Main] AWS Bedrock credentials saved')
+
+      // Load or create config
+      const existingConfig = loadStoredConfig()
+      const newConfig: StoredConfig = existingConfig || {
+        authType: 'api_key',
+        workspaces: [],
+        activeWorkspaceId: null,
+        activeSessionId: null,
+      }
+
+      // Set auth type to api_key (Bedrock uses this path with env vars)
+      newConfig.authType = 'api_key'
+
+      // Create default workspace if none exists
+      let workspaceId = newConfig.activeWorkspaceId
+      if (newConfig.workspaces.length === 0) {
+        const defaultDir = getDefaultWorkspacesDir()
+        const { folderPath } = generateUniqueWorkspacePath(defaultDir, 'Agent')
+        workspaceId = generateWorkspaceId()
+        const workspace = {
+          id: workspaceId,
+          name: 'Agent',
+          rootPath: folderPath,
+        }
+        newConfig.workspaces.push(workspace)
+        newConfig.activeWorkspaceId = workspaceId
+        mainLog.info('[Onboarding:Main] Created default workspace for AWS Bedrock:', workspace)
+      }
+
+      // Save config
+      saveConfig(newConfig)
+      mainLog.info('[Onboarding:Main] Config saved with AWS Bedrock auth')
+
+      // Reinitialize auth to pick up new credentials
+      await sessionManager.reinitializeAuth()
+      mainLog.info('[Onboarding:Main] Reinitialized auth with AWS Bedrock')
+
+      return { success: true, workspaceId: workspaceId ?? undefined }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error'
+      mainLog.error('[Onboarding:Main] AWS Bedrock config error:', message, error)
+      return { success: false, error: message }
+    }
+  })
 }

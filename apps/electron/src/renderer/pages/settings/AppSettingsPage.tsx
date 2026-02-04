@@ -183,6 +183,7 @@ export default function AppSettingsPage() {
                 onBack={apiSetupOnboarding.handleBack}
                 onSelectApiSetupMethod={apiSetupOnboarding.handleSelectApiSetupMethod}
                 onSubmitCredential={apiSetupOnboarding.handleSubmitCredential}
+                onSubmitAwsBedrock={apiSetupOnboarding.handleSubmitAwsBedrock}
                 onStartOAuth={apiSetupOnboarding.handleStartOAuth}
                 onFinish={handleApiSetupFinish}
                 isWaitingForCode={apiSetupOnboarding.isWaitingForCode}

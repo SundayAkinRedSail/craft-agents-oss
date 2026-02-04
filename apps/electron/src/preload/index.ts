@@ -170,6 +170,12 @@ const api: ElectronAPI = {
     anthropicBaseUrl?: string | null
     customModel?: string | null
   }) => ipcRenderer.invoke(IPC_CHANNELS.ONBOARDING_SAVE_CONFIG, config),
+  saveAwsBedrockConfig: (config: {
+    accessKeyId: string
+    secretAccessKey: string
+    region: string
+    sessionToken?: string
+  }) => ipcRenderer.invoke(IPC_CHANNELS.ONBOARDING_SAVE_AWS_BEDROCK_CONFIG, config),
   // Claude OAuth (two-step flow)
   startClaudeOAuth: () => ipcRenderer.invoke(IPC_CHANNELS.ONBOARDING_START_CLAUDE_OAUTH),
   exchangeClaudeCode: (code: string) => ipcRenderer.invoke(IPC_CHANNELS.ONBOARDING_EXCHANGE_CLAUDE_CODE, code),

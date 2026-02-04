@@ -79,5 +79,56 @@ export function isOpusModel(modelId: string): boolean {
  */
 export function isClaudeModel(modelId: string): boolean {
   const lower = modelId.toLowerCase();
-  return lower.startsWith('claude-') || lower.includes('/claude');
+  return lower.startsWith('claude-') || lower.includes('/claude') || lower.includes('anthropic.');
+}
+
+// ============================================
+// AWS BEDROCK MODEL ID MAPPING
+// ============================================
+
+/** Mapping from Anthropic model IDs to AWS Bedrock model IDs */
+const BEDROCK_MODEL_MAP: Record<string, string> = {
+  'claude-opus-4-5-20251101': 'us.anthropic.claude-opus-4-5-20251101-v1:0',
+  'claude-sonnet-4-5-20250929': 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
+  'claude-haiku-4-5-20251001': 'us.anthropic.claude-haiku-4-5-20251001-v1:0',
+};
+
+/** Reverse mapping from Bedrock model IDs to Anthropic model IDs */
+const ANTHROPIC_MODEL_MAP: Record<string, string> = Object.entries(BEDROCK_MODEL_MAP)
+  .reduce((acc, [anthropic, bedrock]) => {
+    acc[bedrock] = anthropic;
+    return acc;
+  }, {} as Record<string, string>);
+
+/**
+ * Convert an Anthropic model ID to AWS Bedrock format.
+ * Returns the original ID if no mapping exists.
+ */
+export function toBedrockModelId(modelId: string): string {
+  return BEDROCK_MODEL_MAP[modelId] || modelId;
+}
+
+/**
+ * Convert an AWS Bedrock model ID to Anthropic format.
+ * Returns the original ID if no mapping exists.
+ */
+export function toAnthropicModelId(modelId: string): string {
+  return ANTHROPIC_MODEL_MAP[modelId] || modelId;
+}
+
+/**
+ * Check if currently running in AWS Bedrock mode.
+ */
+export function isBedrockMode(): boolean {
+  return process.env.CLAUDE_CODE_USE_BEDROCK === '1';
+}
+
+/**
+ * Get the appropriate model ID based on current mode (Bedrock or direct API).
+ */
+export function getEffectiveModelId(modelId: string): string {
+  if (isBedrockMode()) {
+    return toBedrockModelId(modelId);
+  }
+  return modelId;
 }

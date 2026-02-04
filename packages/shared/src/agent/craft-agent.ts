@@ -9,7 +9,7 @@ import { runErrorDiagnostics } from './diagnostics.ts';
 import { loadStoredConfig, loadConfigDefaults, getAnthropicBaseUrl, resolveModelId, type Workspace } from '../config/storage.ts';
 import { isLocalMcpEnabled } from '../workspaces/storage.ts';
 import { loadPlanFromPath, type SessionConfig as Session } from '../sessions/storage.ts';
-import { DEFAULT_MODEL, isClaudeModel } from '../config/models.ts';
+import { DEFAULT_MODEL, isClaudeModel, getEffectiveModelId, isBedrockMode } from '../config/models.ts';
 import { getCredentialManager } from '../credentials/index.ts';
 import { updatePreferences, loadPreferences, formatPreferencesForPrompt, type UserPreferences } from '../config/preferences.ts';
 import type { FileAttachment } from '../utils/files.ts';
@@ -852,7 +852,8 @@ export class CraftAgent {
       // Configure SDK options
       // Resolve model: use tier name when using custom API (OpenRouter), else specific version
       const modelConfig = this.config.model || DEFAULT_MODEL;
-      const model = resolveModelId(modelConfig);
+      // Convert to Bedrock model ID format if running in Bedrock mode
+      const model = getEffectiveModelId(resolveModelId(modelConfig));
 
       // Log provider context for diagnostics (custom base URL = third-party provider)
       const activeBaseUrl = getAnthropicBaseUrl();
@@ -874,7 +875,8 @@ export class CraftAgent {
       // Detect if resolved model is Claude — non-Claude models (via OpenRouter/Ollama) don't
       // support Anthropic-specific betas or extended thinking parameters
       const isClaude = isClaudeModel(model);
-      const useAnthropicBetas = isClaude;
+      // AWS Bedrock doesn't support certain beta headers that direct Anthropic API supports
+      const useAnthropicBetas = isClaude && !isBedrockMode();
 
       // Log mini agent mode details
       if (isMiniAgent) {

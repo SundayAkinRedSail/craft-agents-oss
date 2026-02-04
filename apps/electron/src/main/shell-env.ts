@@ -107,3 +107,59 @@ export function loadShellEnv(): void {
     process.env.PATH = newPath
   }
 }
+
+/**
+ * Load .env file from project root into process.env
+ * This allows runtime configuration via .env file (e.g., AWS Bedrock credentials)
+ */
+export function loadDotEnv(): void {
+  // Only load in development mode (when running from source)
+  if (!process.env.VITE_DEV_SERVER_URL) {
+    return
+  }
+
+  try {
+    const { readFileSync } = require('fs')
+    const { join } = require('path')
+    const { existsSync } = require('fs')
+
+    // Try to find .env in current working directory (project root)
+    const envPath = join(process.cwd(), '.env')
+
+    if (!existsSync(envPath)) {
+      mainLog.info('[dotenv] No .env file found at', envPath)
+      return
+    }
+
+    const envContent = readFileSync(envPath, 'utf-8')
+    let count = 0
+
+    for (const line of envContent.split('\n')) {
+      // Skip comments and empty lines
+      const trimmed = line.trim()
+      if (!trimmed || trimmed.startsWith('#')) continue
+
+      const eq = trimmed.indexOf('=')
+      if (eq > 0) {
+        const key = trimmed.substring(0, eq).trim()
+        let value = trimmed.substring(eq + 1).trim()
+
+        // Remove quotes if present
+        if ((value.startsWith('"') && value.endsWith('"')) ||
+            (value.startsWith("'") && value.endsWith("'"))) {
+          value = value.slice(1, -1)
+        }
+
+        // Only set if not already in environment (don't override existing vars)
+        if (!process.env[key]) {
+          process.env[key] = value
+          count++
+        }
+      }
+    }
+
+    mainLog.info(`[dotenv] Loaded ${count} variables from .env`)
+  } catch (error) {
+    mainLog.warn(`[dotenv] Failed to load .env file: ${error}`)
+  }
+}

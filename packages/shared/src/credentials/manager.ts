@@ -272,6 +272,37 @@ export class CredentialManager {
     // Consider expired if within 5 minutes of expiry
     return Date.now() > credential.expiresAt - 5 * 60 * 1000;
   }
+
+  /** Get AWS Bedrock credentials */
+  async getAwsBedrockCredentials(): Promise<{
+    accessKeyId: string;
+    secretAccessKey: string;
+    region: string;
+    sessionToken?: string;
+  } | null> {
+    const cred = await this.get({ type: 'aws_bedrock' });
+    if (!cred?.value) return null;
+
+    try {
+      // Credentials are stored as JSON string
+      return JSON.parse(cred.value);
+    } catch {
+      return null;
+    }
+  }
+
+  /** Set AWS Bedrock credentials */
+  async setAwsBedrockCredentials(credentials: {
+    accessKeyId: string;
+    secretAccessKey: string;
+    region: string;
+    sessionToken?: string;
+  }): Promise<void> {
+    // Store as JSON string
+    await this.set({ type: 'aws_bedrock' }, {
+      value: JSON.stringify(credentials),
+    });
+  }
 }
 
 // Singleton instance

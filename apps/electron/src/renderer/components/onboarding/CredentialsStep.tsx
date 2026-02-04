@@ -1,7 +1,7 @@
 /**
- * CredentialsStep - Onboarding step wrapper for API key or OAuth flow
+ * CredentialsStep - Onboarding step wrapper for API key, OAuth, or AWS Bedrock flow
  *
- * Thin wrapper that composes ApiKeyInput or OAuthConnect controls
+ * Thin wrapper that composes ApiKeyInput, OAuthConnect, or AwsBedrockInput controls
  * with StepFormLayout for the onboarding wizard context.
  */
 
@@ -14,15 +14,19 @@ import {
   type ApiKeySubmitData,
   OAuthConnect,
   type OAuthStatus,
+  AwsBedrockInput,
+  type AwsBedrockStatus,
+  type AwsBedrockSubmitData,
 } from "../apisetup"
 
-export type CredentialStatus = ApiKeyStatus | OAuthStatus
+export type CredentialStatus = ApiKeyStatus | OAuthStatus | AwsBedrockStatus
 
 interface CredentialsStepProps {
   apiSetupMethod: ApiSetupMethod
   status: CredentialStatus
   errorMessage?: string
   onSubmit: (data: ApiKeySubmitData) => void
+  onSubmitAwsBedrock?: (data: AwsBedrockSubmitData) => void
   onStartOAuth?: () => void
   onBack: () => void
   // Two-step OAuth flow
@@ -36,6 +40,7 @@ export function CredentialsStep({
   status,
   errorMessage,
   onSubmit,
+  onSubmitAwsBedrock,
   onStartOAuth,
   onBack,
   isWaitingForCode,
@@ -43,6 +48,7 @@ export function CredentialsStep({
   onCancelOAuth,
 }: CredentialsStepProps) {
   const isOAuth = apiSetupMethod === 'claude_oauth'
+  const isAwsBedrock = apiSetupMethod === 'aws_bedrock'
 
   // --- OAuth flow ---
   if (isOAuth) {
@@ -103,6 +109,34 @@ export function CredentialsStep({
           onStartOAuth={onStartOAuth!}
           onSubmitAuthCode={onSubmitAuthCode}
           onCancelOAuth={onCancelOAuth}
+        />
+      </StepFormLayout>
+    )
+  }
+
+  // --- AWS Bedrock flow ---
+  if (isAwsBedrock) {
+    return (
+      <StepFormLayout
+        title="AWS Bedrock Configuration"
+        description="Enter your AWS credentials to connect to Claude via Amazon Bedrock."
+        actions={
+          <>
+            <BackButton onClick={onBack} disabled={status === 'validating'} />
+            <ContinueButton
+              type="submit"
+              form="aws-bedrock-form"
+              disabled={false}
+              loading={status === 'validating'}
+              loadingText="Validating..."
+            />
+          </>
+        }
+      >
+        <AwsBedrockInput
+          status={status as AwsBedrockStatus}
+          errorMessage={errorMessage}
+          onSubmit={onSubmitAwsBedrock!}
         />
       </StepFormLayout>
     )
